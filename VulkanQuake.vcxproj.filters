@@ -24,5 +24,8 @@
     <ClInclude Include="Headers\VulkanQuakeApp.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Headers\Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
