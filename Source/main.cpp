@@ -17,12 +17,20 @@
  * limitations under the License.
  */
 
-#include <vulkan/vulkan.hpp>
-
 #include <iostream>
-#include <vector>
 
-int main()
-{
-    return 0;
+#include "VulkanQuakeApp.h"
+
+int main(int argc, char **argv) {
+    VulkanQuakeApp app;
+
+    try {
+        app.Run();
+    }
+    catch (const std::exception& e) {
+        std::cerr << e.what() << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
 }
