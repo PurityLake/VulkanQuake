@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32819.101
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanQuake", "VulkanQuake.vcxproj", "{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Debug|x64.ActiveCfg = Debug|x64
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Debug|x64.Build.0 = Debug|x64
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Debug|x86.ActiveCfg = Debug|Win32
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Debug|x86.Build.0 = Debug|Win32
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Release|x64.ActiveCfg = Release|x64
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Release|x64.Build.0 = Release|x64
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Release|x86.ActiveCfg = Release|Win32
+		{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {64E01B8F-09C9-41C2-9A94-0D5A1402019E}
+	EndGlobalSection
+EndGlobal
