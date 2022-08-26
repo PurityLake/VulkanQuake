@@ -1,17 +1,23 @@
 /*
- * Vulkan Quake
+ * MIT License
+ * Copyright (c) 2022 Robert O'Shea
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #pragma once
@@ -21,12 +27,19 @@
 #include <SDL2/SDL_vulkan.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
+#include <limits>
+#include <optional>
+#include <set>
 #include <stdexcept>
 #include <vector>
 
 #include "Utils.h"
+
+struct QueueFamilyIndicies;
+struct SwapChainSupportDetails;
 
 class VulkanQuakeApp {
 // ------------------------
@@ -35,14 +48,8 @@ class VulkanQuakeApp {
 public:
 	const uint32_t WIDTH = 1280;
 	const uint32_t HEIGHT = 720;
-	const std::string APP_NAME = "Vulkan Quake";
-	const std::string ENGINE_NAME = "Vulkan Quake";
 	
-	const std::vector<const char*> validationLayers = {
-		"VK_LAYER_KHRONOS_validation"
-	};
-
-#ifdef DEBUG
+#ifdef NDEBUG
 	const bool EnableValidationLayers = false;
 #else
 	const bool EnableValidationLayers = true;
@@ -57,9 +64,29 @@ private:
 	VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
 	VkPhysicalDeviceFeatures DeviceFeatures{ };
 	VkDevice Device;
-	VkQueue GraphicsQueue;
+	VkQueue GraphicsQueue, PresentQueue;
+	VkSurfaceKHR Surface;
+	VkSwapchainKHR Swapchain;
+	std::vector<VkImage> SwapchainImages;
+	VkFormat SwapchainImageFormat;
+	VkExtent2D SwapchainExtent;
 
+	// --------------------
+	// DATA
+	// --------------------
+	const std::vector<const char*> ValidationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+	const std::vector<const char*> DeviceExtensions = {
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
+
+	const std::string APP_NAME = "Vulkan Quake";
+	const std::string ENGINE_NAME = "Vulkan Quake";
+
+	// --------------------
 	// DEBUG
+	// --------------------
 	VkDebugUtilsMessengerEXT DebugMessenger;
 
 // ------------------------
@@ -72,24 +99,41 @@ public:
 // Private methods
 // ------------------------
 private:
+	// Window
 	void InitWindow();
+	// Vulkan
 	void InitVulkan();
 	void CreateInstance();
 	void PickPhysicalDevice();
 	void CreateLogicialDevice();
+	void CreateSurface();
+	void CreateSwapchain();
+	// Game Loop
 	void MainLoop();
+	// Cleanup
 	void Cleanup();
-// ---------------
-// Util methods
-// ---------------
+
+	// ---------------
+	// Util methods
+	// ---------------
 	bool CheckExtensionsAvailable(const std::vector<const char*>& extensionNames) const;
 	bool CheckValidaitonLayerSupport() const;
 
+	bool IsDeviceSuitable(const VkPhysicalDevice& device) const;
+	QueueFamilyIndicies FindQueueFamilies(const VkPhysicalDevice& device) const;
+	bool CheckDeviceExtensionSupport(const VkPhysicalDevice& device) const;
+
+	SwapChainSupportDetails QuerySwapChainSupport(const VkPhysicalDevice& device) const;
+
 	std::vector<const char*> GetRequiredExtensions() const;
 
-// --------------------
-// Validation Layer
-// --------------------
+	VkSurfaceFormatKHR ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
+	VkPresentModeKHR ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const;
+	VkExtent2D ChooesSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const;
+
+	// --------------------
+	// Validation Layer
+	// --------------------
 	void SetUpDebugMessenger();
 
 	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);

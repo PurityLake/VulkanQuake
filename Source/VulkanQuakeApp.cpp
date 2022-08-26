@@ -1,36 +1,48 @@
 /*
- * Vulkan Quake
+ * MIT License
+ * Copyright (c) 2022 Robert O'Shea
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
  */
 
 #include "VulkanQuakeApp.h"
 
-#include <optional>
-
-// structs
+// -----------------------
+// Structs
+// -----------------------
 struct QueueFamilyIndicies {
 	std::optional<uint32_t> GraphicsFamily;
+	std::optional<uint32_t> PresentFamily;
 
 	inline bool isComplete() const {
-		return GraphicsFamily.has_value();
+		return GraphicsFamily.has_value() && PresentFamily.has_value();
 	}
 };
 
-// Forward decl static functions
-static bool isDeviceSuitable(const VkPhysicalDevice& device);
-static QueueFamilyIndicies findQueueFamilies(const VkPhysicalDevice& device);
+struct SwapChainSupportDetails {
+	VkSurfaceCapabilitiesKHR capabilities;
+	std::vector<VkSurfaceFormatKHR> formats;
+	std::vector<VkPresentModeKHR> presentModes;
+};
 
+// --------------------------
+// Public Methods
+// --------------------------
 void VulkanQuakeApp::Run() {
 	InitWindow();
 	InitVulkan();
@@ -61,8 +73,10 @@ void VulkanQuakeApp::InitWindow() {
 void VulkanQuakeApp::InitVulkan() {
 	CreateInstance();
 	SetUpDebugMessenger();
+	CreateSurface();
 	PickPhysicalDevice();
 	CreateLogicialDevice();
+	CreateSwapchain();
 }
 
 void VulkanQuakeApp::CreateInstance() {
@@ -92,8 +106,8 @@ void VulkanQuakeApp::CreateInstance() {
 
 	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{ };
 	if (EnableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledLayerNames = validationLayers.data();
+		createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+		createInfo.ppEnabledLayerNames = ValidationLayers.data();
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*) &debugCreateInfo;
@@ -120,7 +134,7 @@ void VulkanQuakeApp::PickPhysicalDevice() {
 	vkEnumeratePhysicalDevices(Instance, &deviceCount, devices.data());
 
 	for (const auto& device : devices) {
-		if (isDeviceSuitable(device)) {
+		if (IsDeviceSuitable(device)) {
 			PhysicalDevice = device;
 			break;
 		}
@@ -132,25 +146,34 @@ void VulkanQuakeApp::PickPhysicalDevice() {
 }
 
 void VulkanQuakeApp::CreateLogicialDevice() {
-	QueueFamilyIndicies indicies = findQueueFamilies(PhysicalDevice);
+	QueueFamilyIndicies indicies = FindQueueFamilies(PhysicalDevice);
+
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	std::set<uint32_t> uniqueQueueFamilies = {
+		indicies.GraphicsFamily.value(), indicies.PresentFamily.value()
+	};
 
 	float queuePriority = 1.0f;
 
-	VkDeviceQueueCreateInfo queueCreateInfo{ };
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indicies.GraphicsFamily.value();
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	for (uint32_t queueFamily : uniqueQueueFamilies) {
+		VkDeviceQueueCreateInfo queueCreateInfo{ };
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = queueFamily;
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
 
 	VkDeviceCreateInfo createInfo{ };
 	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	createInfo.pQueueCreateInfos = &queueCreateInfo;
-	createInfo.queueCreateInfoCount = 1;
 	createInfo.pEnabledFeatures = &DeviceFeatures;
-	createInfo.enabledExtensionCount = 0;
+	createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+	createInfo.pQueueCreateInfos = queueCreateInfos.data();
+	createInfo.enabledExtensionCount = static_cast<uint32_t>(DeviceExtensions.size());
+	createInfo.ppEnabledExtensionNames = DeviceExtensions.data();
 	if (EnableValidationLayers) {
-		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
-		createInfo.ppEnabledExtensionNames = validationLayers.data();
+		createInfo.enabledLayerCount = static_cast<uint32_t>(ValidationLayers.size());
+		createInfo.ppEnabledLayerNames = ValidationLayers.data();
 	} else {
 		createInfo.enabledLayerCount = 0;
 	}
@@ -159,6 +182,65 @@ void VulkanQuakeApp::CreateLogicialDevice() {
 		throw std::runtime_error("Failed to create Logical Device!");
 	}
 	vkGetDeviceQueue(Device, indicies.GraphicsFamily.value(), 0, &GraphicsQueue);
+	vkGetDeviceQueue(Device, indicies.PresentFamily.value(), 0, &PresentQueue);
+}
+
+void VulkanQuakeApp::CreateSurface() {
+	if (!SDL_Vulkan_CreateSurface(Window, Instance, &Surface)) {
+		throw std::runtime_error("Faiuled to create widnow surface!");
+	}
+}
+
+void VulkanQuakeApp::CreateSwapchain() {
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(PhysicalDevice);
+
+	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+	VkExtent2D extent = ChooesSwapExtent(swapChainSupport.capabilities);
+
+	uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
+	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+		imageCount = swapChainSupport.capabilities.maxImageCount;
+	}
+
+	QueueFamilyIndicies indicies = FindQueueFamilies(PhysicalDevice);
+	uint32_t queueFamilyIndicies[] = { indicies.GraphicsFamily.value(), indicies.PresentFamily.value() };
+
+	VkSwapchainCreateInfoKHR createInfo{ };
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = Surface;
+	createInfo.minImageCount = imageCount;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	if (indicies.GraphicsFamily != indicies.PresentFamily) {
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndicies;
+	}
+	else {
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0;
+		createInfo.pQueueFamilyIndices = nullptr;
+	}
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = presentMode;
+	createInfo.clipped = VK_TRUE;
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if (utils::FunctionFailed(vkCreateSwapchainKHR(Device, &createInfo, nullptr, &Swapchain))) {
+		throw std::runtime_error("Failed to create swap chain!");
+	}
+	
+	vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, nullptr);
+	SwapchainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, SwapchainImages.data());
+
+	SwapchainImageFormat = surfaceFormat.format;
+	SwapchainExtent = extent;
 }
 
 void VulkanQuakeApp::MainLoop() {
@@ -173,10 +255,12 @@ void VulkanQuakeApp::MainLoop() {
 }
 
 void VulkanQuakeApp::Cleanup() {
+	vkDestroySwapchainKHR(Device, Swapchain, nullptr);
 	vkDestroyDevice(Device, nullptr);
 	if (EnableValidationLayers) {
 		DestroyDebugUtilsMessengerEXT(Instance, DebugMessenger, nullptr);
 	}
+	vkDestroySurfaceKHR(Instance, Surface, nullptr);
 	vkDestroyInstance(Instance, nullptr);
 	if (Window != nullptr) {
 		SDL_DestroyWindow(Window);
@@ -231,7 +315,7 @@ bool VulkanQuakeApp::CheckValidaitonLayerSupport() const {
 	std::vector<VkLayerProperties> availableLayers(layerCount);
 	vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
-	for (const char* name : validationLayers) {
+	for (const char* name : ValidationLayers) {
 		if (!std::any_of(std::begin(availableLayers), std::end(availableLayers), IsLayerProp(name))) {
 			std::cerr << "Layer: \"" << name << "\" not found\n";
 			return false;
@@ -256,6 +340,129 @@ std::vector<const char*> VulkanQuakeApp::GetRequiredExtensions() const {
 	}
 
 	return extensionNames;
+}
+
+bool VulkanQuakeApp::IsDeviceSuitable(const VkPhysicalDevice& device) const {
+	QueueFamilyIndicies indicies = FindQueueFamilies(device);
+
+	bool extensionSupported = CheckDeviceExtensionSupport(device);
+
+	bool swapChainAdequate = false;
+	if (extensionSupported) {
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indicies.isComplete() && extensionSupported && swapChainAdequate;
+}
+
+QueueFamilyIndicies VulkanQuakeApp::FindQueueFamilies(const VkPhysicalDevice& device) const {
+	QueueFamilyIndicies indicies;
+
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+	int i = 0;
+	for (const auto& queueFamily : queueFamilies) {
+		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+			indicies.GraphicsFamily = i;
+		}
+
+		VkBool32 presentSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Surface, &presentSupport);
+
+		if (presentSupport) {
+			indicies.PresentFamily = i;
+		}
+
+		if (indicies.isComplete()) {
+			break;
+		}
+
+		++i;
+	}
+
+	return indicies;
+}
+bool VulkanQuakeApp::CheckDeviceExtensionSupport(const VkPhysicalDevice& device) const {
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+	std::set<std::string> requiredExtensions(std::begin(DeviceExtensions), std::end(DeviceExtensions));
+
+	for (const auto& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
+
+	return requiredExtensions.empty();
+}
+
+SwapChainSupportDetails VulkanQuakeApp::QuerySwapChainSupport(const VkPhysicalDevice& device) const {
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, Surface, &details.capabilities);
+
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, Surface, &formatCount, nullptr);
+
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, Surface, &formatCount, details.formats.data());
+	}
+
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, Surface, &presentModeCount, nullptr);
+
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, Surface, &presentModeCount, details.presentModes.data());
+	}
+
+	return details;
+}
+
+VkSurfaceFormatKHR VulkanQuakeApp::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const {
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+	return availableFormats[0];
+}
+
+VkPresentModeKHR VulkanQuakeApp::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const {
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D VulkanQuakeApp::ChooesSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) const {
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	} else {
+		int width, height;
+		SDL_Vulkan_GetDrawableSize(Window, &width, &height);
+
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
+
+		actualExtent.width = std::clamp(
+			actualExtent.width,
+			capabilities.minImageExtent.width,
+			capabilities.maxImageExtent.width);
+		actualExtent.height = std::clamp(
+			actualExtent.height,
+			capabilities.minImageExtent.height,
+			capabilities.maxImageExtent.height);
+
+		return actualExtent;
+	}
 }
 
 // --------------------
@@ -300,38 +507,4 @@ void VulkanQuakeApp::DestroyDebugUtilsMessengerEXT(VkInstance Instance,
 	if (func != nullptr) {
 		func(Instance, debugMessenger, pAllocator);
 	}
-}
-
-// ---------------------------
-// Static Functions
-// ---------------------------
-static bool isDeviceSuitable(const VkPhysicalDevice& device) {
-	QueueFamilyIndicies indicies = findQueueFamilies(device);
-
-	return indicies.isComplete();
-}
-
-static QueueFamilyIndicies findQueueFamilies(const VkPhysicalDevice& device) {
-	QueueFamilyIndicies indicies;
-
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-	int i = 0;
-	for (const auto& queueFamily : queueFamilies) {
-		if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
-			indicies.GraphicsFamily = i;
-		}
-
-		if (indicies.isComplete()) {
-			break;
-		}
-
-		++i;
-	}
-
-	return indicies;
 }
