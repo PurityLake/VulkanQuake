@@ -21,11 +21,17 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Shader.cpp" />
     <ClCompile Include="Source\VulkanQuakeApp.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Headers\Shader.h" />
     <ClInclude Include="Headers\Utils.h" />
     <ClInclude Include="Headers\VulkanQuakeApp.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\shader.frag" />
+    <None Include="Resources\shader.vert" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{0391500C-CD16-4A37-AEA5-9BAB4FF5A447}</ProjectGuid>

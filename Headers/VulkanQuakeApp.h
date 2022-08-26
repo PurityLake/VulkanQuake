@@ -36,6 +36,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Shader.h"
 #include "Utils.h"
 
 struct QueueFamilyIndicies;
@@ -71,6 +72,8 @@ private:
 	VkFormat SwapchainImageFormat;
 	VkExtent2D SwapchainExtent;
 	std::vector<VkImageView> SwapchainImageViews;
+	Shader CurrentShader;
+	VkPipelineLayout pipelineLayout;
 
 	// --------------------
 	// DATA
@@ -110,6 +113,7 @@ private:
 	void CreateSurface();
 	void CreateSwapchain();
 	void CreateImageViews();
+	void CreateGraphicsPipeline();
 	// Game Loop
 	void MainLoop();
 	// Cleanup
