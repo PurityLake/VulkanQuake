@@ -70,6 +70,7 @@ private:
 	std::vector<VkImage> SwapchainImages;
 	VkFormat SwapchainImageFormat;
 	VkExtent2D SwapchainExtent;
+	std::vector<VkImageView> SwapchainImageViews;
 
 	// --------------------
 	// DATA
@@ -108,6 +109,7 @@ private:
 	void CreateLogicialDevice();
 	void CreateSurface();
 	void CreateSwapchain();
+	void CreateImageViews();
 	// Game Loop
 	void MainLoop();
 	// Cleanup
