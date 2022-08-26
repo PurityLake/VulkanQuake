@@ -20,7 +20,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Source\main.cpp" />
+    <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\VulkanQuakeApp.cpp" />
   </ItemGroup>
   <ItemGroup>

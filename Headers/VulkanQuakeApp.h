@@ -1,9 +1,6 @@
 /*
  * Vulkan Quake
  *
- * Copyright (C) 2016 Valve Corporation
- * Copyright (C) 2016 LunarG, Inc.
- *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,19 +43,24 @@ public:
 	};
 
 #ifdef DEBUG
-	const bool enableValidationLayers = false;
+	const bool EnableValidationLayers = false;
 #else
-	const bool enableValidationLayers = true;
+	const bool EnableValidationLayers = true;
 #endif
 
 // ------------------------
 // Private members
 // ------------------------
 private:
-	SDL_Window* window;
-	VkInstance instance;
+	SDL_Window* Window;
+	VkInstance Instance;
+	VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+	VkPhysicalDeviceFeatures DeviceFeatures{ };
+	VkDevice Device;
+	VkQueue GraphicsQueue;
 
-	VkDebugUtilsMessengerEXT debugMessenger;
+	// DEBUG
+	VkDebugUtilsMessengerEXT DebugMessenger;
 
 // ------------------------
 // Public methods
@@ -73,6 +75,8 @@ private:
 	void InitWindow();
 	void InitVulkan();
 	void CreateInstance();
+	void PickPhysicalDevice();
+	void CreateLogicialDevice();
 	void MainLoop();
 	void Cleanup();
 // ---------------
@@ -94,7 +98,7 @@ private:
 		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator,
 		VkDebugUtilsMessengerEXT* pDebugMessenger);
-	void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+	void DestroyDebugUtilsMessengerEXT(VkInstance Instance,
 		VkDebugUtilsMessengerEXT debugMessenger,
 		const VkAllocationCallbacks* pAllocator);
 
