@@ -40,6 +40,16 @@ public:
 	const uint32_t HEIGHT = 720;
 	const std::string APP_NAME = "Vulkan Quake";
 	const std::string ENGINE_NAME = "Vulkan Quake";
+	
+	const std::vector<const char*> validationLayers = {
+		"VK_LAYER_KHRONOS_validation"
+	};
+
+#ifdef DEBUG
+	const bool enableValidationLayers = false;
+#else
+	const bool enableValidationLayers = true;
+#endif
 
 // ------------------------
 // Private members
@@ -47,6 +57,8 @@ public:
 private:
 	SDL_Window* window;
 	VkInstance instance;
+
+	VkDebugUtilsMessengerEXT debugMessenger;
 
 // ------------------------
 // Public methods
@@ -66,5 +78,35 @@ private:
 // ---------------
 // Util methods
 // ---------------
-	bool CheckExtensionsAvailable(const std::vector<const char*> extensionNames) const;
+	bool CheckExtensionsAvailable(const std::vector<const char*>& extensionNames) const;
+	bool CheckValidaitonLayerSupport() const;
+
+	std::vector<const char*> GetRequiredExtensions() const;
+
+// --------------------
+// Validation Layer
+// --------------------
+	void SetUpDebugMessenger();
+
+	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+	VkResult CreateDebugUtilsMessengerEXT(VkInstance instnance,
+		const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator,
+		VkDebugUtilsMessengerEXT* pDebugMessenger);
+	void DestroyDebugUtilsMessengerEXT(VkInstance instance,
+		VkDebugUtilsMessengerEXT debugMessenger,
+		const VkAllocationCallbacks* pAllocator);
+
+
+	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData) {
+
+		std::cerr << "Validation Layer: " << pCallbackData->pMessage << std::endl;
+
+		return VK_FALSE;
+	}
 };
