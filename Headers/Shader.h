@@ -48,5 +48,5 @@ public:
 // Private methods
 // ------------------------
 private:
-	VkShaderModule CompileShaderModule(const VkDevice& device, const std::vector<char>&& code);
+	VkShaderModule CompileShaderModule(const VkDevice& device, const std::vector<char> code);
 };

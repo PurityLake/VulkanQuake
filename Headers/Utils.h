@@ -33,8 +33,8 @@ namespace utils {
 		return res != VK_SUCCESS;
 	}
 
-	static std::vector<char>&& readFile(const std::string& filename) {
-		std::ifstream file(filename, std::ios::ate || std::ios::binary);
+	static std::vector<char> readFile(const std::string& filename) {
+		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
 		if (!file.is_open()) {
 			throw std::runtime_error("Failed to open file!");
@@ -47,6 +47,6 @@ namespace utils {
 		file.read(buffer.data(), fileSize);
 		file.close();
 
-		return std::move(buffer);
+		return buffer;
 	}
 }

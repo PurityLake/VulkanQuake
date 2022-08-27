@@ -78,6 +78,8 @@ void VulkanQuakeApp::InitVulkan() {
 	CreateLogicialDevice();
 	CreateSwapchain();
 	CreateImageViews();
+	CreateRenderPass();
+	CreateGraphicsPipeline();
 }
 
 void VulkanQuakeApp::CreateInstance() {
@@ -196,52 +198,52 @@ void VulkanQuakeApp::CreateSwapchain() {
 	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(PhysicalDevice);
 
 	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
-	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
-	VkExtent2D extent = ChooesSwapExtent(swapChainSupport.capabilities);
+VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+VkExtent2D extent = ChooesSwapExtent(swapChainSupport.capabilities);
 
-	uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
-	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
-		imageCount = swapChainSupport.capabilities.maxImageCount;
-	}
+uint32_t imageCount = swapChainSupport.capabilities.minImageCount;
+if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+	imageCount = swapChainSupport.capabilities.maxImageCount;
+}
 
-	QueueFamilyIndicies indicies = FindQueueFamilies(PhysicalDevice);
-	uint32_t queueFamilyIndicies[] = { indicies.GraphicsFamily.value(), indicies.PresentFamily.value() };
+QueueFamilyIndicies indicies = FindQueueFamilies(PhysicalDevice);
+uint32_t queueFamilyIndicies[] = { indicies.GraphicsFamily.value(), indicies.PresentFamily.value() };
 
-	VkSwapchainCreateInfoKHR createInfo{ };
-	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-	createInfo.surface = Surface;
-	createInfo.minImageCount = imageCount;
-	createInfo.imageFormat = surfaceFormat.format;
-	createInfo.imageColorSpace = surfaceFormat.colorSpace;
-	createInfo.imageExtent = extent;
-	createInfo.imageArrayLayers = 1;
-	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-	if (indicies.GraphicsFamily != indicies.PresentFamily) {
-		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-		createInfo.queueFamilyIndexCount = 2;
-		createInfo.pQueueFamilyIndices = queueFamilyIndicies;
-	}
-	else {
-		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0;
-		createInfo.pQueueFamilyIndices = nullptr;
-	}
-	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = presentMode;
-	createInfo.clipped = VK_TRUE;
-	createInfo.oldSwapchain = VK_NULL_HANDLE;
+VkSwapchainCreateInfoKHR createInfo{ };
+createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+createInfo.surface = Surface;
+createInfo.minImageCount = imageCount;
+createInfo.imageFormat = surfaceFormat.format;
+createInfo.imageColorSpace = surfaceFormat.colorSpace;
+createInfo.imageExtent = extent;
+createInfo.imageArrayLayers = 1;
+createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+if (indicies.GraphicsFamily != indicies.PresentFamily) {
+	createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+	createInfo.queueFamilyIndexCount = 2;
+	createInfo.pQueueFamilyIndices = queueFamilyIndicies;
+}
+else {
+	createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	createInfo.queueFamilyIndexCount = 0;
+	createInfo.pQueueFamilyIndices = nullptr;
+}
+createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+createInfo.presentMode = presentMode;
+createInfo.clipped = VK_TRUE;
+createInfo.oldSwapchain = VK_NULL_HANDLE;
 
-	if (utils::FunctionFailed(vkCreateSwapchainKHR(Device, &createInfo, nullptr, &Swapchain))) {
-		throw std::runtime_error("Failed to create swap chain!");
-	}
-	
-	vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, nullptr);
-	SwapchainImages.resize(imageCount);
-	vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, SwapchainImages.data());
+if (utils::FunctionFailed(vkCreateSwapchainKHR(Device, &createInfo, nullptr, &Swapchain))) {
+	throw std::runtime_error("Failed to create swap chain!");
+}
 
-	SwapchainImageFormat = surfaceFormat.format;
-	SwapchainExtent = extent;
+vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, nullptr);
+SwapchainImages.resize(imageCount);
+vkGetSwapchainImagesKHR(Device, Swapchain, &imageCount, SwapchainImages.data());
+
+SwapchainImageFormat = surfaceFormat.format;
+SwapchainExtent = extent;
 }
 
 void VulkanQuakeApp::CreateImageViews() {
@@ -269,9 +271,41 @@ void VulkanQuakeApp::CreateImageViews() {
 	}
 }
 
+void VulkanQuakeApp::CreateRenderPass() {
+	VkAttachmentDescription colorAttachment{ };
+	colorAttachment.format = SwapchainImageFormat;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef{ };
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass{ };
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassInfo{ };
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	if (utils::FunctionFailed(vkCreateRenderPass(Device, &renderPassInfo, nullptr, &RenderPass))) {
+		throw std::runtime_error("Failed to create render pass!");;
+	}
+}
+
 void VulkanQuakeApp::CreateGraphicsPipeline() {
 	CurrentShader.SetVertShaderFilename("Shaders/vert.spv");
-	CurrentShader.SetVertShaderFilename("Shaders/frag.spv");
+	CurrentShader.SetFragShaderFilename("Shaders/frag.spv");
 	CurrentShader.CompileShader(Device);
 
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo{ };
@@ -281,10 +315,10 @@ void VulkanQuakeApp::CreateGraphicsPipeline() {
 	vertShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo fragShaderStageInfo{ };
-	vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	vertShaderStageInfo.module = CurrentShader.GetFrag();
-	vertShaderStageInfo.pName = "main";
+	fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageInfo.module = CurrentShader.GetFrag();
+	fragShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[] = {
 		vertShaderStageInfo, fragShaderStageInfo
@@ -295,17 +329,16 @@ void VulkanQuakeApp::CreateGraphicsPipeline() {
 		VK_DYNAMIC_STATE_SCISSOR
 	};
 
-	VkPipelineDynamicStateCreateInfo dynamicState{ };
+	VkPipelineDynamicStateCreateInfo dynamicState{};
 	dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
 	dynamicState.pDynamicStates = dynamicStates.data();
 
+
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo{ };
 	vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	vertexInputInfo.vertexBindingDescriptionCount = 0;
-	vertexInputInfo.pVertexBindingDescriptions = nullptr;
 	vertexInputInfo.vertexAttributeDescriptionCount = 0;
-	vertexInputInfo.pVertexAttributeDescriptions = nullptr;
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssembly{ };
 	inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
@@ -327,9 +360,7 @@ void VulkanQuakeApp::CreateGraphicsPipeline() {
 	VkPipelineViewportStateCreateInfo viewportState{ };
 	viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
 	viewportState.viewportCount = 1;
-	viewportState.pViewports = &viewport;
 	viewportState.scissorCount = 1;
-	viewportState.pScissors = &scissor;
 
 	VkPipelineRasterizationStateCreateInfo rasterizer{ };
 	rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -381,8 +412,32 @@ void VulkanQuakeApp::CreateGraphicsPipeline() {
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 	pipelineLayoutInfo.pPushConstantRanges = nullptr;
 
-	if (utils::FunctionFailed(vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &pipelineLayout))) {
+	if (utils::FunctionFailed(vkCreatePipelineLayout(Device, &pipelineLayoutInfo, nullptr, &PipelineLayout))) {
 		throw std::runtime_error("failed to create pipeline layout!");
+	}
+
+	VkGraphicsPipelineCreateInfo pipelineInfo{ };
+	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineInfo.stageCount = 2;
+	pipelineInfo.pStages = shaderStages;
+	pipelineInfo.pVertexInputState = &vertexInputInfo;
+	pipelineInfo.pInputAssemblyState = &inputAssembly;
+	pipelineInfo.pViewportState = &viewportState;
+	pipelineInfo.pRasterizationState = &rasterizer;
+	pipelineInfo.pMultisampleState = &multisampling;
+	pipelineInfo.pDepthStencilState = nullptr;
+	pipelineInfo.pColorBlendState = &colorBlending;
+	pipelineInfo.pDynamicState = &dynamicState;
+	pipelineInfo.layout = PipelineLayout;
+	pipelineInfo.renderPass = RenderPass;
+	pipelineInfo.subpass = 0;
+	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+	pipelineInfo.basePipelineIndex = -1;
+
+	if (utils::FunctionFailed(
+		vkCreateGraphicsPipelines(
+			Device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &GraphicsPipeline))) {
+		throw std::runtime_error("Failed to create graphics pipeline!");
 	}
 }
 
@@ -398,7 +453,9 @@ void VulkanQuakeApp::MainLoop() {
 }
 
 void VulkanQuakeApp::Cleanup() {
-	vkDestroyPipelineLayout(Device, pipelineLayout, nullptr);
+	vkDestroyPipeline(Device, GraphicsPipeline, nullptr);
+	vkDestroyPipelineLayout(Device, PipelineLayout, nullptr);
+	vkDestroyRenderPass(Device, RenderPass, nullptr);
 	for (auto& imageView : SwapchainImageViews) {
 		vkDestroyImageView(Device, imageView, nullptr);
 	}

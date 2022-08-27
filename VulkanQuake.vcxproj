@@ -129,6 +129,11 @@
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutputPath)\Shaders 
+$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.vert -o $(OutputPath)\Shaders\vert.spv
+$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.frag -o $(OutputPath)\Shaders\frag.spv</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -172,6 +177,11 @@
       <AdditionalLibraryDirectories>$(VULKAN_SDK)\Lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
+    <PostBuildEvent>
+      <Command>mkdir $(OutputPath)\Shaders 
+$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.vert -o $(OutputPath)\Shaders\vert.spv
+$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.frag -o $(OutputPath)\Shaders\frag.spv</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

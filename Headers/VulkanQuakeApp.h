@@ -73,7 +73,9 @@ private:
 	VkExtent2D SwapchainExtent;
 	std::vector<VkImageView> SwapchainImageViews;
 	Shader CurrentShader;
-	VkPipelineLayout pipelineLayout;
+	VkRenderPass RenderPass;
+	VkPipelineLayout PipelineLayout;
+	VkPipeline GraphicsPipeline;
 
 	// --------------------
 	// DATA
@@ -113,6 +115,7 @@ private:
 	void CreateSurface();
 	void CreateSwapchain();
 	void CreateImageViews();
+	void CreateRenderPass();
 	void CreateGraphicsPipeline();
 	// Game Loop
 	void MainLoop();
