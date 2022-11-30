@@ -88,6 +88,9 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>
+    </IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -130,9 +133,10 @@
       <EntryPointSymbol>mainCRTStartup</EntryPointSymbol>
     </Link>
     <PostBuildEvent>
-      <Command>mkdir $(OutputPath)\Shaders 
-$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.vert -o $(OutputPath)\Shaders\vert.spv
-$(VULKAN_SDK)\Bin\glslc.exe $(SolutionDir)\Resources\shader.frag -o $(OutputPath)\Shaders\frag.spv</Command>
+      <Command>mkdir "$(OutputPath)\Shaders"
+xcopy "$(VULKAN_SDK)Lib\SDL2.dll" "$(OutDir)"
+$(VULKAN_SDK)\Bin\glslc.exe "$(SolutionDir)\Resources\shader.vert" -o "$(OutputPath)\Shaders\vert.spv"
+$(VULKAN_SDK)\Bin\glslc.exe "$(SolutionDir)\Resources\shader.frag" -o "$(OutputPath)\Shaders\frag.spv"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
